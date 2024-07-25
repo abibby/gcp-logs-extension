@@ -27,6 +27,7 @@ chrome.devtools.network.onRequestFinished.addListener(function (request) {
   if (traceHeader === undefined) {
     return;
   }
+
   requests.push(request);
   for (const port of requestPorts) {
     port.postMessage(requests);

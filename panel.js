@@ -1,9 +1,24 @@
 // @ts-check
 
-import { h } from "./html";
+import { getProject, setProject } from "./storage.js";
+import { h } from "./html.js";
 
-const requestTable =
-  document.getElementById("request-table") || document.createElement("tbody");
+/** @type {HTMLElement} */
+// @ts-ignore
+const requestTable = document.getElementById("request-table");
+
+/** @type {HTMLInputElement} */
+// @ts-ignore
+const projectInput = document.getElementById("project");
+
+projectInput?.addEventListener("change", () => {
+  setProject(projectInput.value);
+  updateTable();
+});
+
+getProject().then((p) => {
+  projectInput.value = p;
+});
 
 /**
  * @param {Array<string|number|HTMLElement>} row
@@ -25,18 +40,17 @@ function addRow(row) {
 }
 
 /**
- *
  * @param {chrome.devtools.network.Request} request
  * @returns {HTMLElement|string}
  */
 function traceLink(request) {
+  const project = projectInput.value;
   const traceHeader = request.response.headers.find(
     (h) => h.name === "x-cloud-trace-context"
   );
   if (!traceHeader) {
     return "n/a";
   }
-  const project = "ownersbox07";
   return h("a", {
     href:
       "https://console.cloud.google.com/logs/query;query=" +
@@ -49,17 +63,25 @@ function traceLink(request) {
   });
 }
 
-/**
- *
- * @param {chrome.devtools.network.Request[]} requests
- * @returns
- */
-function onRequests(requests) {
+/** @type {chrome.devtools.network.Request[]} */
+let requests = [];
+
+function updateTable() {
   requestTable.innerHTML = "";
   for (const request of requests) {
     addRow([request.request.url, request.response.status, traceLink(request)]);
   }
 }
 
-const port = chrome.runtime.connect({ name: "requests" });
-port.onMessage.addListener(onRequests);
+/**
+ *
+ * @param {chrome.devtools.network.Request[]} r
+ * @returns
+ */
+async function onRequests(r) {
+  requests = r;
+  updateTable();
+}
+
+const requestsPort = chrome.runtime.connect({ name: "requests" });
+requestsPort.onMessage.addListener(onRequests);
