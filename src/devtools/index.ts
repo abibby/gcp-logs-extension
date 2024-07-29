@@ -1,15 +1,14 @@
-// @ts-check
+type DTRequest = chrome.devtools.network.Request;
+type DTPort = chrome.runtime.Port;
 
-/** @type {chrome.devtools.network.Request[]} */
-const requests = [];
+const requests: DTRequest[] = [];
 
-/** @type {Set<chrome.runtime.Port>} */
-const requestPorts = new Set();
+const requestPorts = new Set<DTPort>();
 
 chrome.devtools.panels.create(
   "GCP Logs",
   "icon.png",
-  "panel.html",
+  "src/panel/index.html",
   function (panel) {}
 );
 
@@ -20,14 +19,16 @@ chrome.devtools.network.onNavigated.addListener(function () {
     port.postMessage(requests);
   }
 });
-chrome.devtools.network.onRequestFinished.addListener(function (request) {
+
+chrome.devtools.network.onRequestFinished.addListener(function (
+  request: DTRequest
+) {
   const traceHeader = request.response.headers.find(
     (h) => h.name === "x-cloud-trace-context"
   );
   if (traceHeader === undefined) {
     return;
   }
-
   requests.push(request);
   for (const port of requestPorts) {
     port.postMessage(requests);
@@ -43,7 +44,5 @@ chrome.runtime.onConnect.addListener((port) => {
   port.onDisconnect.addListener(() => {
     requestPorts.delete(port);
   });
-  setTimeout(() => {
-    port.postMessage(requests);
-  }, 200);
+  port.postMessage(requests);
 });
