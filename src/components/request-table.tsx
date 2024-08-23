@@ -41,6 +41,22 @@ export function RequestTable({ requests, project }: RequestTableProps) {
   );
 }
 
+class RequestParams {
+  readonly #map: [string, string][] = [];
+  public set(key: string, value: string) {
+    this.#map.push([key, value]);
+  }
+
+  public toString(): string {
+    return this.#map
+      .map(
+        ([key, value]) =>
+          encodeURIComponent(key) + "=" + encodeURIComponent(value)
+      )
+      .join(";");
+  }
+}
+
 function traceLink(request: Request, project: string): string | undefined {
   const traceHeader = request.response.headers.find(
     (h) => h.name === "x-cloud-trace-context"
@@ -48,11 +64,26 @@ function traceLink(request: Request, project: string): string | undefined {
   if (!traceHeader) {
     return undefined;
   }
-  return (
-    "https://console.cloud.google.com/logs/query;query=" +
-    encodeURIComponent(
-      `trace="projects/${project}/traces/${traceHeader.value}"`
-    ) +
-    `?project=${encodeURIComponent(project)}`
+  const buffer = 60 * 1000;
+  const startedDateTime = new Date(request.startedDateTime);
+  const start = new Date(startedDateTime.getTime() - buffer);
+  const end = new Date(startedDateTime.getTime() + request.time + buffer);
+
+  const rp = new RequestParams();
+  rp.set("query", `trace="projects/${project}/traces/${traceHeader.value}"`);
+  rp.set("cursorTimestamp", startedDateTime.toISOString());
+  rp.set("startTime", start.toISOString());
+  rp.set("endTime", end.toISOString());
+
+  const url = new URL(
+    "https://console.cloud.google.com/logs/query;" + rp.toString()
   );
+  url.searchParams.set("project", project);
+
+  return url.toString();
 }
+// https://console.cloud.google.com/logs/query
+//  ;query=trace%3D%22projects%2Fownersbox04%2Ftraces%2F833543b24ecb1f4e7eb9d08bdaabc0c7%22
+//  ;cursorTimestamp=2024-07-29T20:02:14.384854Z
+//  ;startTime=2024-07-29T20:01:14.296Z
+//  ;endTime=2024-07-29T20:03:14.402Z?project=ownersbox04

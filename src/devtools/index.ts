@@ -44,5 +44,8 @@ chrome.runtime.onConnect.addListener((port) => {
   port.onDisconnect.addListener(() => {
     requestPorts.delete(port);
   });
-  port.postMessage(requests);
+
+  setTimeout(() => {
+    port.postMessage(requests);
+  }, 100);
 });

@@ -1,2 +1,4 @@
 node_modules
 dist
+key.pem
+gcp-logs.crx

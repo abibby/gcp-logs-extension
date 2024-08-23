@@ -1,20 +1,12 @@
-import { useEffect, useState } from "preact/hooks";
+import { useState } from "preact/hooks";
+import { usePort } from "./use-port";
 
 type Request = chrome.devtools.network.Request;
 export function useRequests() {
   const [requests, setRequests] = useState<Request[]>([]);
-  useEffect(() => {
-    function onRequests(requests: Request[]) {
-      setRequests(requests);
-    }
-
-    const requestsPort = chrome.runtime.connect({ name: "requests" });
-    requestsPort.onMessage.addListener(onRequests);
-    return () => {
-      requestsPort.onMessage.removeListener(onRequests);
-      requestsPort.disconnect();
-    };
+  const requestsPort = usePort<Request[]>("requests");
+  requestsPort.useMessages((requests) => {
+    setRequests(requests);
   }, []);
-
   return requests;
 }

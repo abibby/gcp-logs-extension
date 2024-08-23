@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "main": "main.js",
   "scripts": {
-    "watch": "vite build --watch"
+    "watch": "vite build --watch",
+    "build": "vite build",
+    "pack": "npm run build && \"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome\" --pack-extension=./dist --pack-extension-key=./key.pem && mv dist.crx ./gcp-logs.crx"
   },
   "type": "module",
   "keywords": [],
@@ -15,7 +17,8 @@
     "@types/chrome": "^0.0.269",
     "preact": "^10.23.1",
     "typescript": "^5.5.4",
-    "vite": "^5.3.5"
+    "vite": "^5.3.5",
+    "vite-plugin-static-copy": "^1.0.6"
   },
   "dependencies": {
     "@zwzn/spicy": "^1.0.1"
